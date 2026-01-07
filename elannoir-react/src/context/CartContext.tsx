@@ -87,3 +87,4 @@ export function useCart() {
   }
   return context;
 }
+// Note: helper removed — use `total` value exposed by the context instead.

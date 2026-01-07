@@ -1,22 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Ruler } from 'lucide-react';
-import { products } from '../data/products';
+import { productsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import SizeGuide from '../components/SizeGuide';
 import ProductGallery from '../components/ProductGallery';
-import type { Size } from '../types';
+import type { Size, Product } from '../types';
 
 export default function Product() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const product = products.find(p => p.id === id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        if (id) {
+          const data = await productsAPI.getById(id);
+          if (mounted) setProduct(data);
+        }
+      } catch (e) {
+        console.error('Erro ao carregar produto', e);
+        if (mounted) setProduct(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false };
+  }, [id]);
   const { addItem } = useCart();
   
   const [size, setSize] = useState<Size | ''>('');
   const [adding, setAdding] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: '#f2f2f2' }}>
+        Carregando...
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -59,7 +86,7 @@ export default function Product() {
       name: product.name,
       price: product.price,
       description: product.description,
-      image: product.image,
+      image: (product as any).image || (product as any).images?.[0],
       size: size as Size,
       quantity: 1
     });

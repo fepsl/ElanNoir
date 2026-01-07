@@ -1,9 +1,30 @@
 // src/pages/Home.tsx - VERSÃO MELHORADA
 import { Link } from 'react-router-dom';
 import { Truck, Shield, Repeat, Star } from 'lucide-react';
-import { products } from '../data/products';
+import { useEffect, useState } from 'react';
+import { productsAPI } from '../services/api';
+import type { Product } from '../types';
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const data = await productsAPI.getAll();
+        if (mounted) setProducts(data || []);
+      } catch (e) {
+        console.error('Erro ao carregar produtos', e);
+      } finally {
+        // noop
+      }
+    };
+
+    load();
+    return () => { mounted = false };
+  }, []);
+
   return (
     <div>
       {/* Hero Section Melhorada */}
@@ -282,7 +303,7 @@ export default function Home() {
                   style={{
                     width: '100%',
                     height: 450,
-                    backgroundImage: `url(${product.image})`,
+                    backgroundImage: `url(${(product as any).image || (product as any).images?.[0]})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     transition: 'transform 0.5s ease'

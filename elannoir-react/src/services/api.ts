@@ -48,6 +48,48 @@ api.interceptors.response.use(
 );
 
 // Tipos para as requisições e respostas
+export interface ShippingAddress {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  complement?: string;
+}
+
+export interface OrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  product: {
+    id: string; // slug
+    name: string;
+    price: number;
+    imageUrl?: string;
+  };
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  total: number;
+  status: string;
+  shippingAddress: ShippingAddress;
+  paymentMethod: string;
+  items: OrderItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOrderPayload {
+  items: Array<{
+    slug: string;
+    quantity: number;
+  }>;
+  shippingAddress: ShippingAddress;
+  paymentMethod?: string;
+}
+
 export interface RegisterData {
   name: string;
   email: string;
@@ -92,6 +134,23 @@ const getErrorMessage = (error: unknown, defaultMessage: string): string => {
 };
 
 // Funções de autenticação
+export const ordersAPI = {
+  create: async (payload: CreateOrderPayload): Promise<Order> => {
+    const response = await api.post('/orders/create', payload);
+    return response.data;
+  },
+
+  getMyOrders: async (): Promise<Order[]> => {
+    const response = await api.get('/orders/my-orders');
+    return response.data;
+  },
+
+  getById: async (orderId: string): Promise<Order> => {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  }
+};
+
 export const authAPI = {
   // Registrar novo usuário
   register: async (data: RegisterData): Promise<AuthResponse> => {

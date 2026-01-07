@@ -3,6 +3,7 @@ import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
+
 export default function Cart() {
   const { items, total, removeItem, updateQuantity, clearCart } = useCart();
   const { user } = useAuth();

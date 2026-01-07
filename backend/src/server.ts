@@ -32,16 +32,16 @@ app.get('/health', (req, res) => {
 });
 
 // TODO: Import routes aqui depois de criar
-// import authRoutes from './routes/auth.routes';
-// import productRoutes from './routes/product.routes';
-// import orderRoutes from './routes/order.routes';
+import authRoutes from './routes/auth.routes';
+import productRoutes from './routes/product.routes';
+import orderRoutes from './routes/order.routes';
 // import reviewRoutes from './routes/review.routes';
 // import couponRoutes from './routes/coupon.routes';
 // import newsletterRoutes from './routes/newsletter.routes';
 
-// app.use('/api/auth', authRoutes);
-// app.use('/api/products', productRoutes);
-// app.use('/api/orders', orderRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 // app.use('/api/reviews', reviewRoutes);
 // app.use('/api/coupons', couponRoutes);
 // app.use('/api/newsletter', newsletterRoutes);
