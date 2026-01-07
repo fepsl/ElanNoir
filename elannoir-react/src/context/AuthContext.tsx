@@ -1,63 +1,113 @@
-import { createContext, useContext, useState } from 'react';
-import type { PropsWithChildren } from 'react';
-import type { User } from '../types';
+// elannoir-react/src/context/AuthContext.tsx
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI, AuthResponse, RegisterData, LoginData, ApiError } from '../services/api';
+import { User } from '../types';
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-};
+  updateUser: (user: User) => void;
+}
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: PropsWithChildren) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  async function login(email: string, password: string) {
-    // Simula chamada de API
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    if (!email || !password) {
-      throw new Error('Email e senha obrigatórios');
-    }
-    
-    const fakeUser: User = {
-      id: '1',
-      name: email.split('@')[0],
-      email
+  // Carregar usuário do localStorage ao iniciar
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (token) {
+          // Verificar se o token ainda é válido buscando dados do usuário
+          const userData = await authAPI.getMe();
+          setUser({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+          });
+        }
+      } catch (error) {
+        // Token inválido ou expirado, limpar storage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    setUser(fakeUser);
-  }
 
-  async function register(email: string, password: string) {
-    // Simula chamada de API
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    if (!email || !password) {
-      throw new Error('Email e senha obrigatórios');
-    }
-    
-    if (password.length < 6) {
-      throw new Error('A senha deve ter pelo menos 6 caracteres');
-    }
-    
-    const newUser: User = {
-      id: String(Date.now()),
-      name: email.split('@')[0],
-      email
-    };
-    
-    setUser(newUser);
-  }
+    loadUser();
+  }, []);
 
-  function logout() {
+  const login = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      
+      const loginData: LoginData = { email, password };
+      const response: AuthResponse = await authAPI.login(loginData);
+      
+      // Salvar token e usuário
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      setUser({
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+      });
+    } catch (error) {
+      const apiError = error as ApiError;
+      throw new Error(apiError.message || 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (name: string, email: string, password: string) => {
+    try {
+      setLoading(true);
+      
+      const registerData: RegisterData = { name, email, password };
+      const response: AuthResponse = await authAPI.register(registerData);
+      
+      // Salvar token e usuário
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      setUser({
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+      });
+    } catch (error) {
+      const apiError = error as ApiError;
+      throw new Error(apiError.message || 'Erro ao registrar usuário');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    // Limpar token e usuário
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
-  }
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -65,8 +115,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }
